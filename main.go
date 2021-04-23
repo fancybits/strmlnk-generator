@@ -55,7 +55,8 @@ func handlePage(browser *rod.Browser, lnk string) {
 	}
 
 	log.Printf("[GEN] Loading page: %v", lnk)
-	page := browser.MustPage(lnk).MustWaitLoad().MustWaitIdle()
+	page := browser.MustPage()
+	page.MustNavigate(lnk).MustWaitLoad().MustWaitIdle()
 	info := page.MustInfo()
 	switch uri.Host {
 	case "www.paramountplus.com":
@@ -76,6 +77,19 @@ func handlePage(browser *rod.Browser, lnk string) {
 	case "www.hulu.com":
 		for _, e := range page.MustElements(".EpisodeCollection__item") {
 			processHulu(info, e)
+		}
+	case "www.peacocktv.com":
+		var needLogin bool
+		page.Race().Element(`.sign-in-form`).MustHandle(func(e *rod.Element) {
+			log.Printf("[ERR] Please sign in to your PeacockTV account first")
+			needLogin = true
+		}).Element(`.program-details__content`).MustDo()
+		if needLogin {
+			return
+		}
+		name := *page.MustElement(`.program-details__content img[alt]`).MustAttribute("alt")
+		for _, e := range page.MustElements(".episode") {
+			processPeacock(info, name, e)
 		}
 	default:
 		log.Printf("[ERR] Unrecognized domain: %v", uri.Host)
@@ -103,6 +117,23 @@ func processParamountPlus(info *proto.TargetTargetInfo, e *rod.Element) {
 		log.Printf("[ERR] Could not find paramountplus episode information for %v", *href)
 		return
 	}
+	createEpisodeStreamLink(name, season, episode, lnk)
+}
+
+func processPeacock(info *proto.TargetTargetInfo, name string, e *rod.Element) {
+	href := e.MustElement("a").MustAttribute("href")
+	uri, _ := url.Parse(info.URL)
+	res, _ := uri.Parse(*href)
+	lnk := res.String()
+
+	epinfo := e.MustElement(`.episode__metadata-item--season-episode`).MustText()
+	parts := strings.Split(epinfo, " ")
+	if len(parts) != 2 {
+		log.Printf("[ERR] Could not find peacocktv episode information for %v", *href)
+		return
+	}
+	season := strings.TrimPrefix(parts[0], "S")
+	episode := strings.TrimPrefix(parts[1], "E")
 	createEpisodeStreamLink(name, season, episode, lnk)
 }
 
