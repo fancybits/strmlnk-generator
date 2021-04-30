@@ -74,6 +74,31 @@ func handlePage(browser *rod.Browser, lnk string) {
 				}
 			}
 		}
+	case "play.hbomax.com":
+		page.MustWaitRequestIdle()()
+		name := *page.MustElement(`div[role=heading]`).MustAttribute("aria-label")
+
+		season := *page.MustElement(`div[role=button][aria-label^="Selected, Season"]`).MustAttribute("aria-label")
+		season = strings.TrimPrefix(season, "Selected, Season ")
+		parts := strings.Split(season, ",")
+		season = parts[0]
+		for _, e := range page.MustElements(`a[role=link][href^="/episode"]`) {
+			processHboMax(info, name, season, e)
+		}
+
+		for _, e := range page.MustElements(`div[role=button][aria-label^="Season"]`) {
+			season := *e.MustAttribute("aria-label")
+			season = strings.TrimPrefix(season, "Season ")
+			parts := strings.Split(season, ",")
+			season = parts[0]
+
+			e.MustClick()
+			page.MustWaitRequestIdle()()
+
+			for _, e := range page.MustElements(`a[role=link][href^="/episode"]`) {
+				processHboMax(info, name, season, e)
+			}
+		}
 	case "www.hulu.com":
 		for _, e := range page.MustElements(".EpisodeCollection__item") {
 			processHulu(info, e)
@@ -134,6 +159,20 @@ func processPeacock(info *proto.TargetTargetInfo, name string, e *rod.Element) {
 	}
 	season := strings.TrimPrefix(parts[0], "S")
 	episode := strings.TrimPrefix(parts[1], "E")
+	createEpisodeStreamLink(name, season, episode, lnk)
+}
+
+func processHboMax(info *proto.TargetTargetInfo, name string, season string, e *rod.Element) {
+	href := e.MustElement("a").MustAttribute("href")
+	uri, _ := url.Parse(info.URL)
+	res, _ := uri.Parse(*href)
+	lnk := res.String()
+
+	var episode string
+	episode = strings.TrimPrefix(*e.MustAttribute("aria-label"), "Episode, ")
+	parts := strings.Split(episode, " ")
+	episode = strings.TrimSuffix(parts[0], ".")
+
 	createEpisodeStreamLink(name, season, episode, lnk)
 }
 
