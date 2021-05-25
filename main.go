@@ -82,6 +82,10 @@ func handlePage(browser *rod.Browser, lnk string) {
 				}
 			}
 		}
+	case "www.sho.com":
+		for _, e := range page.MustElements("a[data-episode-id]") {
+			processShowtime(info, e)
+		}
 	case "play.hbomax.com":
 		page.MustWaitRequestIdle()()
 		name := *page.MustElement(`div[role=heading]`).MustAttribute("aria-label")
@@ -127,6 +131,16 @@ func handlePage(browser *rod.Browser, lnk string) {
 	default:
 		log.Printf("[ERR] Unrecognized domain: %v", uri.Host)
 	}
+}
+
+func processShowtime(info *proto.TargetTargetInfo, e *rod.Element) {
+	id := e.MustAttribute("data-episode-id")
+	label := e.MustAttribute("data-label") // stream:Black Monday:season:3:episode:1
+	parts := strings.Split(*label, ":")
+	name := parts[1]
+	season := parts[3]
+	episode := parts[5]
+	createEpisodeStreamLink(name, season, episode, "https://www.showtimeanytime.com/#/episode/"+*id)
 }
 
 func processParamountPlus(info *proto.TargetTargetInfo, e *rod.Element) {
