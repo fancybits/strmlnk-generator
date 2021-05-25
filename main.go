@@ -60,8 +60,16 @@ func handlePage(browser *rod.Browser, lnk string) {
 	info := page.MustInfo()
 	switch uri.Host {
 	case "www.paramountplus.com":
-		for _, e := range page.MustElements("section#latest-episodes a.link") {
-			processParamountPlus(info, e)
+		for _, j := range page.MustElements(`ul[aa-region="season filter"] ul.content a`) {
+			if v := j.MustAttribute("data-selected"); v == nil {
+				page.MustElement(`ul[aa-region="season filter"] button`).MustClick()
+				time.Sleep(100*time.Millisecond)
+				j.MustClick()
+				page.MustWaitRequestIdle()()
+			}
+			for _, e := range page.MustElements("section#latest-episodes a.link") {
+				processParamountPlus(info, e)
+			}
 		}
 		if strings.HasSuffix(uri.Path, "/shows/tooning-out-the-news/") {
 			for _, e := range page.MustElements(`section.js-le-carousel`) {
