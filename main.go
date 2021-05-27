@@ -111,6 +111,23 @@ func handlePage(browser *rod.Browser, lnk string) {
 				processHboMax(info, name, season, e)
 			}
 		}
+	case "tools.applemediaservices.com":
+		name := page.MustElement(`h1.details-title`).MustText()
+		log.Printf("[NFO] Show: %v", name)
+		var links []string
+		for _, e := range page.MustElements(`div.seasons-dropdown a`) {
+			lnk := *e.MustAttribute("href")
+			if lnk != "#" {
+				links = append(links, lnk)
+			}
+		}
+		for _, lnk := range links {
+			page.MustNavigate(lnk).MustWaitLoad().MustWaitIdle()
+			season := strings.TrimPrefix(page.MustElement(`h1.details-title`).MustText(), "Season ")
+			for _, e := range page.MustElements(`div.season-episodes a.mini`) {
+				processAppleTV(name, season, e)
+			}
+		}
 	case "www.hulu.com":
 		for _, e := range page.MustElements(".EpisodeCollection__item") {
 			processHulu(info, e)
@@ -195,6 +212,13 @@ func processHboMax(info *proto.TargetTargetInfo, name string, season string, e *
 	parts := strings.Split(episode, " ")
 	episode = strings.TrimSuffix(parts[0], ".")
 
+	createEpisodeStreamLink(name, season, episode, lnk)
+}
+
+func processAppleTV(name, season string, e *rod.Element) {
+	lnk := *e.MustAttribute("href")
+	lnk = strings.Replace(lnk, "tools.applemediaservices.com", "tv.apple.com", 1)
+	episode := strings.TrimPrefix(e.MustElement(`p.num`).MustText(), "Episode ")
 	createEpisodeStreamLink(name, season, episode, lnk)
 }
 
