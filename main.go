@@ -88,6 +88,7 @@ func handlePage(browser *rod.Browser, lnk string) {
 		}
 	case "play.hbomax.com":
 		page.MustWaitRequestIdle()()
+		time.Sleep(500 * time.Millisecond)
 		name := *page.MustElement(`div[role=heading]`).MustAttribute("aria-label")
 
 		season := *page.MustElement(`div[role=button][aria-label^="Selected, Season"]`).MustAttribute("aria-label")
