@@ -63,7 +63,7 @@ func handlePage(browser *rod.Browser, lnk string) {
 		for _, j := range page.MustElements(`ul[aa-region="season filter"] ul.content a`) {
 			if v := j.MustAttribute("data-selected"); v == nil {
 				page.MustElement(`ul[aa-region="season filter"] button`).MustClick()
-				time.Sleep(100*time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				j.MustClick()
 				page.MustWaitRequestIdle()()
 			}
