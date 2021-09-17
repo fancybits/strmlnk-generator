@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -19,11 +20,12 @@ import (
 var (
 	flagDir   = flag.String("dir", "Imports", "directory to place streamlinks")
 	flagDebug = flag.Bool("debug", false, "debug with visible chrome window")
+	flagWatch = flag.String("watch", "", "file with urls to watch and refresh in a loop")
 )
 
 func main() {
 	flag.Parse()
-	if flag.NArg() == 0 {
+	if flag.NArg() == 0 && *flagWatch == "" {
 		fmt.Printf("Usage: %v [-dir <dir>] <url> [<url>*]\n", os.Args[0])
 		os.Exit(1)
 	}
@@ -37,6 +39,26 @@ func main() {
 	log.Printf("[GEN] Connecting to chromium")
 	browser := rod.New().ControlURL(u).MustConnect()
 	defer browser.MustClose()
+
+	if watch := *flagWatch; watch != "" {
+		for {
+			fp, err := os.Open(watch)
+			if err != nil {
+				panic(err)
+			}
+
+			scanner := bufio.NewScanner(fp)
+			for scanner.Scan() {
+				line := scanner.Text()
+				parts := strings.Fields(line)
+				url := parts[0]
+				handlePage(browser, url)
+			}
+
+			fp.Close()
+			time.Sleep(6 * time.Hour)
+		}
+	}
 
 	for _, arg := range flag.Args() {
 		handlePage(browser, arg)
