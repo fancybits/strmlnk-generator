@@ -52,6 +52,9 @@ func main() {
 				line := scanner.Text()
 				parts := strings.Fields(line)
 				url := parts[0]
+				if url == "" {
+					continue
+				}
 				handlePage(browser, url)
 			}
 
@@ -70,6 +73,11 @@ func main() {
 }
 
 func handlePage(browser *rod.Browser, lnk string) {
+	defer func() {
+		if rerr := recover(); rerr != nil {
+			log.Printf("[ERR] Failed: %v", rerr)
+		}
+	}()
 	uri, err := url.Parse(lnk)
 	if err != nil {
 		log.Printf("[ERR] Unrecognized URL: %v", err)
@@ -91,17 +99,6 @@ func handlePage(browser *rod.Browser, lnk string) {
 			}
 			for _, e := range page.MustElements("section#latest-episodes a.link") {
 				processParamountPlus(info, e)
-			}
-		}
-		if strings.HasSuffix(uri.Path, "/shows/tooning-out-the-news/") {
-			for _, e := range page.MustElements(`section.js-le-carousel`) {
-				if v := e.MustAttribute("data-title"); v != nil && *v == "Week in Review" {
-					e.MustScrollIntoView()
-					page.MustWaitRequestIdle()()
-					for _, f := range e.MustElements("a.link") {
-						processParamountPlus(info, f)
-					}
-				}
 			}
 		}
 	case "www.sho.com":
